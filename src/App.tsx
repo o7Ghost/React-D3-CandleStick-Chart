@@ -1,35 +1,115 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, ChangeEvent } from "react";
+import "./App.css";
+import CandleStickChart from "./components/CandleStickChart";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [fileContent, setFileContent] = useState<string[] | ArrayBuffer | null>(
+    null
+  );
+  const [fileName, setFileName] = useState<string>("");
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      setFileName(file.name);
+      const reader = new FileReader();
+
+      console.log("ran?");
+      const SLICE_SIZE = 1024 * 1024; // 1MB
+      const blobSlice = file.slice(0, SLICE_SIZE);
+
+      reader.onload = (e) => {
+        const result = e.target?.result;
+
+        console.log(
+          "Partial file read result:",
+          result ? (result as string).substring(0, 200) + "..." : "null"
+        );
+
+        if (typeof result === "string") {
+          const allLines = result.split("\n");
+          // Ensure there's at least a header line
+          if (allLines.length === 0) {
+            console.error("CSV data is empty or unreadable.");
+            setFileContent(null);
+            return;
+          }
+
+          const headerLine = allLines[0];
+          // Assuming comma as delimiter, trim whitespace from headers
+          const headers = headerLine.split(",").map((header) =>
+            header
+              .trim()
+              .toLowerCase()
+              .replace(/\s+(.)/g, (_, char) => char.toUpperCase())
+              .replace(/\s+/g, "")
+          );
+
+          // Take up to the first 1000 data lines (excluding header)
+          const dataLines = allLines.slice(1, 1001);
+
+          const parsedData: string[] = dataLines.reduce(
+            (acc: any[], line: string) => {
+              // Trim whitespace from line and skip empty lines
+              const trimmedLine = line.trim();
+              if (!trimmedLine) {
+                return acc;
+              }
+              const values = trimmedLine
+                .split(",")
+                .map((value) => value.trim());
+              if (values.length === headers.length) {
+                const obj: { [key: string]: string } = {};
+                headers.forEach((header, index) => {
+                  obj[header] = values[index];
+                });
+                acc.push(obj);
+              } else {
+                console.warn(
+                  "Skipping line due to mismatched columns:",
+                  trimmedLine
+                );
+              }
+              return acc;
+            },
+            []
+          );
+
+          setFileContent(parsedData);
+        } else {
+          console.error("File content could not be read as text or is empty.");
+          setFileContent(null);
+        }
+      };
+
+      reader.onerror = (e) => {
+        console.error("File reading error:", e.target?.error);
+        setFileContent(null);
+        setFileName("");
+      };
+
+      reader.readAsText(blobSlice);
+    } else {
+      setFileContent(null);
+      setFileName("");
+    }
+  };
+
+  console.log(fileContent);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <input type="file" onChange={handleFileChange} accept=".csv" />
+      {fileName && <p>Selected file: {fileName}</p>}
+      {/* 
+        You might want to pass the parsed data to your CandleStickChart.
+        For example, if fileContent is parsed into an array called `chartData`:
+        <CandleStickChart data={chartData} /> 
+      */}
+      <CandleStickChart data={[]} />
     </>
-  )
+  );
 }
 
-export default App
+export default App;
