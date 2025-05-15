@@ -1,11 +1,11 @@
 import { useState, ChangeEvent } from "react";
 import "./App.css";
 import CandleStickChart from "./components/CandleStickChart";
+import { ChartData } from "./type";
 
 function App() {
-  const [fileContent, setFileContent] = useState<string[] | ArrayBuffer | null>(
-    null
-  );
+  const [fileContent, setFileContent] = useState<ChartData[] | null>(null);
+
   const [fileName, setFileName] = useState<string>("");
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -49,7 +49,7 @@ function App() {
           // Take up to the first 1000 data lines (excluding header)
           const dataLines = allLines.slice(1, 1001);
 
-          const parsedData: string[] = dataLines.reduce(
+          const parsedData: ChartData[] = dataLines.reduce(
             (acc: any[], line: string) => {
               // Trim whitespace from line and skip empty lines
               const trimmedLine = line.trim();
@@ -96,8 +96,9 @@ function App() {
     }
   };
 
-  console.log(fileContent);
+  // console.log(new Date(fileContent[0].date));
 
+  console.log("File content:", fileContent);
   return (
     <>
       <input type="file" onChange={handleFileChange} accept=".csv" />
@@ -107,7 +108,7 @@ function App() {
         For example, if fileContent is parsed into an array called `chartData`:
         <CandleStickChart data={chartData} /> 
       */}
-      <CandleStickChart data={[]} />
+      <CandleStickChart data={fileContent ?? []} />
     </>
   );
 }
