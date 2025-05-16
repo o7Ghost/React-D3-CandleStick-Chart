@@ -47,7 +47,7 @@ function App() {
           );
 
           // Take up to the first 1000 data lines (excluding header)
-          const dataLines = allLines.slice(1, 1001);
+          const dataLines = allLines.slice(1, 501);
 
           const parsedData: ChartData[] = dataLines.reduce(
             (acc: any[], line: string) => {
@@ -100,16 +100,22 @@ function App() {
 
   console.log("File content:", fileContent);
   return (
-    <>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100vh",
+        justifyContent: "center",
+      }}
+    >
       <input type="file" onChange={handleFileChange} accept=".csv" />
       {fileName && <p>Selected file: {fileName}</p>}
-      {/* 
-        You might want to pass the parsed data to your CandleStickChart.
-        For example, if fileContent is parsed into an array called `chartData`:
-        <CandleStickChart data={chartData} /> 
-      */}
-      <CandleStickChart data={fileContent ?? []} />
-    </>
+
+      <div>
+        <CandleStickChart data={fileContent ?? []} />
+      </div>
+    </div>
   );
 }
 
