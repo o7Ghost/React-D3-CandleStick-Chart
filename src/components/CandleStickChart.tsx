@@ -1,8 +1,9 @@
 import * as d3 from "d3";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChartData } from "../type";
 import { CANDLE_UNIT_WIDTH, MINUTE_DISPLAY_FORMAT } from "../constant";
 import { useChartDimensions } from "../hooks";
+import { findLocalMinAndMax } from "../utils";
 
 // option to load all at once or load by some window
 // TODO: 1 min chart
@@ -13,10 +14,13 @@ import { useChartDimensions } from "../hooks";
 //       4 hr  chart
 //       1 day chart
 const CandleStickChart = ({ data }: { data: ChartData[] }) => {
-  const [dimensionsRef, chartWidth] = useChartDimensions();
+  const [dimensionsRef, dimensions] = useChartDimensions();
   const xAxis = useRef<SVGGElement | null>(null);
+  const yAxis = useRef<SVGGElement | null>(null);
 
-  const visibleCandleCount = Math.floor(chartWidth / CANDLE_UNIT_WIDTH);
+  const visibleCandleCount = Math.floor(
+    dimensions.chartWidth / CANDLE_UNIT_WIDTH
+  );
 
   // Get the slice of data that fits in the viewport (most recent data)
   const visibleData =
@@ -29,7 +33,15 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       new Date(visibleData[0]?.date),
       new Date(visibleData[visibleData.length - 1]?.date),
     ],
-    [0, chartWidth]
+    [0, dimensions.chartWidth]
+  );
+
+  const yScale = d3.scaleLinear(
+    findLocalMinAndMax([
+      ...visibleData.map((vd) => vd.high),
+      ...visibleData.map((vd) => vd.low),
+    ]),
+    [0, dimensions.chartHeight]
   );
 
   useEffect(() => {
@@ -40,17 +52,54 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         const date = d as Date;
         return d3.timeFormat(MINUTE_DISPLAY_FORMAT)(date);
       })
+
+      .tickSize(dimensions.chartHeight)
       .tickSizeOuter(0);
 
     if (xAxis.current) {
-      d3.select(xAxis.current).call(xAxisGenerator);
+      d3.select(xAxis.current).call(xAxisGenerator).select(".domain").remove();
     }
   }, [xScale]);
 
+  useEffect(() => {
+    const tickCount = Math.max(3, Math.floor(dimensions.chartHeight / 80));
+
+    const yAxisGenerator = d3
+      .axisRight(yScale)
+      .tickSize(dimensions.chartWidth)
+      .ticks(tickCount)
+      .tickFormat((d) => {
+        return d3.format(".2f")(d);
+      })
+      .tickSizeOuter(0);
+
+    if (yAxis.current) {
+      d3.select(yAxis.current).call(yAxisGenerator).select(".domain").remove();
+    }
+  }, [yScale]);
+
+  console.log(
+    "what is client height",
+    dimensionsRef?.current?.clientHeight,
+    dimensions.chartHeight
+  );
+
   return (
-    <div className="candle-stick-chart-container" ref={dimensionsRef}>
-      <svg className="candle-stick-chart" width={chartWidth} height={"100%"}>
+    <div
+      className="candle-stick-chart-container"
+      ref={dimensionsRef}
+      style={{ height: "100dvh" }}
+    >
+      <svg
+        viewBox={`0 0 ${dimensions.chartWidth} ${dimensions.chartHeight}`}
+        className="candle-stick-chart"
+        style={{
+          display: "block",
+          overflow: "inherit",
+        }}
+      >
         <g ref={xAxis} transform={`translate(0, 10)`} />
+        <g ref={yAxis} transform={`translate(5, 0)`} />
       </svg>
     </div>
   );

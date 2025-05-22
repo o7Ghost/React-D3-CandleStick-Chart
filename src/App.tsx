@@ -100,22 +100,23 @@ function App() {
 
   console.log("File content:", fileContent);
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        height: "100vh",
-        justifyContent: "center",
-      }}
-    >
+    <>
       <input type="file" onChange={handleFileChange} accept=".csv" />
       {fileName && <p>Selected file: {fileName}</p>}
 
-      <div>
-        <CandleStickChart data={fileContent ?? []} />
-      </div>
-    </div>
+      {/* <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          // width: "100%",
+
+          // justifyContent: "center",
+          // boxSizing: "border-box",
+        }}
+      > */}
+      <CandleStickChart data={fileContent ?? []} />
+      {/* </div> */}
+    </>
   );
 }
 
