@@ -104,7 +104,7 @@ function App() {
       <input type="file" onChange={handleFileChange} accept=".csv" />
       {fileName && <p>Selected file: {fileName}</p>}
 
-      {/* <div
+      <div
         style={{
           display: "flex",
           flexDirection: "column",
@@ -113,9 +113,9 @@ function App() {
           // justifyContent: "center",
           // boxSizing: "border-box",
         }}
-      > */}
-      <CandleStickChart data={fileContent ?? []} />
-      {/* </div> */}
+      >
+        <CandleStickChart data={fileContent ?? []} />
+      </div>
     </>
   );
 }

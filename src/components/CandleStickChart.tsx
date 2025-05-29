@@ -1,7 +1,11 @@
 import * as d3 from "d3";
 import { useEffect, useRef } from "react";
 import { ChartData } from "../type";
-import { CANDLE_UNIT_WIDTH, MINUTE_DISPLAY_FORMAT } from "../constant";
+import {
+  CANDLE_UNIT_WIDTH,
+  MINUTE_DISPLAY_FORMAT,
+  SVG_DOMAIN_CLASS,
+} from "../constant";
 import { useChartDimensions } from "../hooks";
 import { findLocalMinAndMax } from "../utils";
 
@@ -22,7 +26,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     dimensions.chartWidth / CANDLE_UNIT_WIDTH
   );
 
-  // Get the slice of data that fits in the viewport (most recent data)
   const visibleData =
     data.length > visibleCandleCount
       ? data.slice(data.length - visibleCandleCount)
@@ -57,7 +60,10 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .tickSizeOuter(0);
 
     if (xAxis.current) {
-      d3.select(xAxis.current).call(xAxisGenerator).select(".domain").remove();
+      d3.select(xAxis.current)
+        .call(xAxisGenerator)
+        .select(SVG_DOMAIN_CLASS)
+        .remove();
     }
   }, [xScale]);
 
@@ -74,15 +80,12 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .tickSizeOuter(0);
 
     if (yAxis.current) {
-      d3.select(yAxis.current).call(yAxisGenerator).select(".domain").remove();
+      d3.select(yAxis.current)
+        .call(yAxisGenerator)
+        .select(SVG_DOMAIN_CLASS)
+        .remove();
     }
   }, [yScale]);
-
-  console.log(
-    "what is client height",
-    dimensionsRef?.current?.clientHeight,
-    dimensions.chartHeight
-  );
 
   return (
     <div
@@ -91,15 +94,16 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       style={{ height: "100dvh" }}
     >
       <svg
-        viewBox={`0 0 ${dimensions.chartWidth} ${dimensions.chartHeight}`}
+        preserveAspectRatio="xMidYMid meet"
         className="candle-stick-chart"
         style={{
           display: "block",
-          overflow: "inherit",
         }}
+        width={dimensions.chartWidth}
+        height={dimensions.chartHeight}
       >
-        <g ref={xAxis} transform={`translate(0, 10)`} />
-        <g ref={yAxis} transform={`translate(5, 0)`} />
+        <g ref={xAxis} transform={`translate(0, -10)`} />
+        <g ref={yAxis} transform={`translate(-30, 0)`} />
       </svg>
     </div>
   );
