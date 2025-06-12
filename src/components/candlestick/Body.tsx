@@ -1,3 +1,7 @@
+import { useRef } from "react";
+
 export const Body = () => {
-  return <div></div>;
+  const candleStickBodyContainerRef = useRef<SVGGElement | null>(null);
+
+  return <g ref={candleStickBodyContainerRef} />;
 };

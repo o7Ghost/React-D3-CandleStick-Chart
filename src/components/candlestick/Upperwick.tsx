@@ -1,3 +1,3 @@
-export const Lowerwick = () => {
+export const Upperwick = () => {
   return <div></div>;
 };

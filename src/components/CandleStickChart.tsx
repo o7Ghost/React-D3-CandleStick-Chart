@@ -8,6 +8,7 @@ import {
 } from "../constant";
 import { useChartDimensions } from "../hooks";
 import { findLocalMinAndMax } from "../utils";
+import { Lowerwick } from "./candlestick";
 
 // option to load all at once or load by some window
 // TODO: 1 min chart
@@ -104,6 +105,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       >
         <g ref={xAxis} transform={`translate(0, -10)`} />
         <g ref={yAxis} transform={`translate(-30, 0)`} />
+        <Lowerwick xScale={xScale} yScale={yScale} chartData={data} />
       </svg>
     </div>
   );

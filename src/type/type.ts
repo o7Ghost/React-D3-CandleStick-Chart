@@ -7,3 +7,5 @@ export type ChartData = {
   adjClose: number;
   volume: number;
 };
+
+export type Color = string;
