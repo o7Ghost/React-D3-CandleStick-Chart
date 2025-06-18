@@ -23,9 +23,10 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const xAxis = useRef<SVGGElement | null>(null);
   const yAxis = useRef<SVGGElement | null>(null);
 
-  const visibleCandleCount = Math.floor(
-    dimensions.chartWidth / CANDLE_UNIT_WIDTH
-  );
+  const boundedWidth = dimensions.chartWidth - 30; // 30 for y-axis
+  const boundedHeight = dimensions.chartHeight - 10; // 10 for x-axis
+
+  const visibleCandleCount = Math.floor(boundedWidth / CANDLE_UNIT_WIDTH);
 
   const visibleData =
     data.length > visibleCandleCount
@@ -37,7 +38,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       new Date(visibleData[0]?.date),
       new Date(visibleData[visibleData.length - 1]?.date),
     ],
-    [0, dimensions.chartWidth]
+    [0, boundedWidth]
   );
 
   const yScale = d3.scaleLinear(
@@ -45,7 +46,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       ...visibleData.map((vd) => vd.high),
       ...visibleData.map((vd) => vd.low),
     ]),
-    [0, dimensions.chartHeight]
+    [0, boundedHeight]
   );
 
   useEffect(() => {
@@ -69,15 +70,15 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   }, [xScale]);
 
   useEffect(() => {
-    const tickCount = Math.max(3, Math.floor(dimensions.chartHeight / 80));
+    // const tickCount = Math.max(3, Math.floor(dimensions.chartHeight / 80));
 
     const yAxisGenerator = d3
       .axisRight(yScale)
       .tickSize(dimensions.chartWidth)
-      .ticks(tickCount)
-      .tickFormat((d) => {
-        return d3.format(".2f")(d);
-      })
+      // .ticks(tickCount)
+      // .tickFormat((d) => {
+      //   return d3.format(".2f")(d);
+      // })
       .tickSizeOuter(0);
 
     if (yAxis.current) {
@@ -105,7 +106,8 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       >
         <g ref={xAxis} transform={`translate(0, -10)`} />
         <g ref={yAxis} transform={`translate(-30, 0)`} />
-        <Lowerwick xScale={xScale} yScale={yScale} chartData={data} />
+
+        <Lowerwick xScale={xScale} yScale={yScale} chartData={visibleData} />
       </svg>
     </div>
   );

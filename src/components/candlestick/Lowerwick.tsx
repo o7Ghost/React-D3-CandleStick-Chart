@@ -14,20 +14,22 @@ export const Lowerwick = ({
 }) => {
   const candleLowerWickContainerRef = useRef<SVGGElement | null>(null);
 
+  console.log("Lowerwick rendered", chartData);
+
   useEffect(() => {
     if (candleLowerWickContainerRef.current) {
       d3.select(candleLowerWickContainerRef.current)
         .selectAll("rect")
         .data(chartData)
         .join("rect")
-        .attr("width", 10)
+        .attr("width", 1)
         .attr("height", (d) => {
           return d.open > d.close
             ? yScale(d.low) - yScale(d.close)
             : yScale(d.low) - yScale(d.open);
         })
         .attr("x", (d) => {
-          return xScale(parseDate(d.date)) - 10 / 2;
+          return xScale(parseDate(d.date)) - 1 / 2;
         })
         .attr("y", (d) => {
           return d.open > d.close ? yScale(d.close) : yScale(d.open);
