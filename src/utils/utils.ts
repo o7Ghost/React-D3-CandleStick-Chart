@@ -28,41 +28,56 @@ export const findLocalMinAndMax = (arr: number[]): [number, number] | [] => {
 export const parseDate = (dateStr: string | Date) => new Date(dateStr);
 
 /**
- * Calculates the width of a candle in pixels for a candlestick chart.
+ * Calculates the optimal spacing width for candlestick chart elements based on time intervals.
  *
- * @param candleLockerWidthDate - The time interval in milliseconds that determines the base width for each candle
- * @param dateRange - Array of chart data containing date information for the chart
- * @param xScale - D3 time scale function that maps date values to pixel positions on the x-axis
+ * This function analyzes the provided chart data to find the minimum time difference between
+ * consecutive data points, then calculates an appropriate width for candlestick rendering
+ * by reducing the minimum interval by 30% to ensure proper spacing and visual separation.
  *
- * @returns The calculated candle width in pixels, reduced by 30% for spacing between candles
+ * @param filteredData - Array of chart data objects containing date information
+ * @returns The calculated width for candlestick spacing in milliseconds, adjusted for visual spacing
  *
  * @example
  * ```typescript
- * const candleWidth = calculateCandleWidth(
- *   86400000, // 1 day in milliseconds
- *   chartData,
- *   xScale
- * );
+ * const chartData = [
+ *   { date: '2023-01-01', ... },
+ *   { date: '2023-01-02', ... },
+ *   { date: '2023-01-03', ... }
+ * ];
+ * const spacing = calculateCandleStickSpacing(chartData);
  * ```
  */
-export const calculateCandleWidthDate = (filteredData: ChartData[]) => {
-  const times = filteredData.map((x) => x.date).sort();
-  let indexes = [0, 1];
-  let min = parseDate(times[1]).getTime() - parseDate(times[0]).getTime();
+export const calculateCandleStickSpacing = (chartData: ChartData[]) => {
+  if (chartData.length < 2) return 0;
 
-  for (let i = 1; i < times.length; i++) {
-    if (
-      parseDate(times[i + 1]).getTime() - parseDate(times[i]).getTime() <
-      min
-    ) {
-      min = parseDate(times[i + 1]).getTime() - parseDate(times[i]).getTime();
-      indexes = [i, i + 1];
+  const times = chartData
+    .map((x) => parseDate(x.date).getTime())
+    .sort((a, b) => a - b);
+
+  let minInterval = times[1] - times[0];
+
+  for (let i = 1; i < times.length - 1; i++) {
+    const interval = times[i + 1] - times[i];
+    if (interval < minInterval) {
+      minInterval = interval;
     }
   }
 
-  let rWidth =
-    parseDate(times[indexes[1]]).getTime() -
-    parseDate(times[indexes[0]]).getTime();
-  rWidth -= rWidth * 0.3;
-  return rWidth;
+  return minInterval * 0.7; // Reduce by 30%
+};
+
+// TODO: need to show a fixed width when there's only one canndle stick
+export const calculateCandleStickWidth = (
+  candleSpacing: number,
+  dateRange: ChartData[],
+  xScale: d3.ScaleTime<number, number, never>
+) => {
+  const minMax = d3.extent(
+    dateRange.map((dateRange) => parseDate(dateRange.date))
+  ) as [Date, Date];
+
+  const tempCandleWidth =
+    xScale(minMax[0].getTime() + candleSpacing) - xScale(minMax[0].getTime());
+
+  return tempCandleWidth * 0.7;
 };

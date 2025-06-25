@@ -9,12 +9,10 @@ export const Lowerwick = ({
   chartData,
 }: {
   yScale: any;
-  xScale: any;
+  xScale: d3.ScaleTime<number, number, never>;
   chartData: ChartData[];
 }) => {
   const candleLowerWickContainerRef = useRef<SVGGElement | null>(null);
-
-  console.log("Lowerwick rendered", chartData);
 
   useEffect(() => {
     if (candleLowerWickContainerRef.current) {
