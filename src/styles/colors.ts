@@ -1,6 +1,6 @@
-import { Color } from "../types";
+import { Color } from "../type";
 
-const colors: Record<string, Color> = {
+export const colors: Record<string, Color> = {
   green: "#089981",
   red: "#e13443",
 };

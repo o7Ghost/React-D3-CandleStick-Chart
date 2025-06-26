@@ -69,11 +69,13 @@ export const calculateCandleStickSpacing = (chartData: ChartData[]) => {
 // TODO: need to show a fixed width when there's only one canndle stick
 export const calculateCandleStickWidth = (
   candleSpacing: number,
-  dateRange: ChartData[],
+  chartData: ChartData[],
   xScale: d3.ScaleTime<number, number, never>
 ) => {
+  if (chartData.length === 0) return 0;
+
   const minMax = d3.extent(
-    dateRange.map((dateRange) => parseDate(dateRange.date))
+    chartData.map((chartData) => parseDate(chartData.date))
   ) as [Date, Date];
 
   const tempCandleWidth =
