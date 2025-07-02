@@ -27,10 +27,14 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     d3.zoomIdentity
   );
 
-  const boundedWidth = dimensions.chartWidth - 35; // 30 for y-axis
+  const boundedWidth = dimensions.chartWidth - 35; // 35 for y-axis
   const boundedHeight = dimensions.chartHeight - 10; // 10 for x-axis
 
   const visibleCandleCount = Math.floor(boundedWidth / CANDLE_UNIT_WIDTH);
+
+  const [viewportStartIndex, setViewportStartIndex] = useState(
+    Math.max(0, data.length - visibleCandleCount)
+  );
 
   // const visibleData =
   //   data.length > visibleCandleCount
@@ -45,16 +49,25 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   //   [0, boundedWidth]
   // );
 
-  const initialVisibleData =
-    data.length > visibleCandleCount
-      ? data.slice(data.length - visibleCandleCount)
-      : data;
+  useEffect(() => {
+    setViewportStartIndex(Math.max(0, data.length - visibleCandleCount));
+  }, [data]);
+
+  // Create a sliding window of data based on viewport
+  const getViewportData = useCallback(() => {
+    const startIndex = Math.max(0, viewportStartIndex);
+    const endIndex = Math.min(data.length, startIndex + visibleCandleCount);
+
+    return data.slice(startIndex, endIndex);
+  }, [data, viewportStartIndex, visibleCandleCount]);
+
+  const viewportData = getViewportData();
 
   const baseXScale = d3.scaleTime(
-    initialVisibleData.length > 0
+    viewportData.length > 0
       ? [
-          new Date(initialVisibleData[0]?.date),
-          new Date(initialVisibleData[initialVisibleData.length - 1]?.date),
+          new Date(viewportData[0]?.date),
+          new Date(viewportData[viewportData.length - 1]?.date),
         ]
       : [new Date(), new Date()],
     [0, boundedWidth]
@@ -65,17 +78,18 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const getVisibleData = useCallback(() => {
     const [startDate, endDate] = xScale.domain();
 
-    const dateFilteredData = data.filter((d) => {
-      const date = new Date(d.date);
-      return date >= startDate && date <= endDate;
-    });
+    // Find the indices for the date range within viewport data
+    const startIndex = d3.bisectLeft(
+      viewportData.map((d) => new Date(d.date)),
+      startDate
+    );
+    const endIndex = d3.bisectRight(
+      viewportData.map((d) => new Date(d.date)),
+      endDate
+    );
 
-    if (dateFilteredData.length > visibleCandleCount) {
-      return dateFilteredData.slice(-visibleCandleCount);
-    }
-
-    return dateFilteredData;
-  }, [data, xScale, visibleCandleCount]);
+    return viewportData.slice(Math.max(0, startIndex), endIndex + 1);
+  }, [viewportData, xScale]);
 
   const visibleData = getVisibleData();
 
@@ -126,12 +140,10 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         .remove();
     }
   }, [yScale]);
-
   useEffect(() => {
     if (!svgRef.current) return;
 
     if (!data || data.length === 0) {
-      // Clear any existing zoom behavior
       const svg = d3.select(svgRef.current);
       svg.on(".zoom", null);
       return;
@@ -139,44 +151,67 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 50]) // Min and max zoom levels
+      .scaleExtent([0.5, 10])
       .translateExtent([
-        [-boundedWidth * 10, -Infinity], // Allow extensive panning
-        [boundedWidth * 10, Infinity],
+        [-boundedWidth * 0.5, -Infinity],
+        [boundedWidth * 1.5, Infinity],
       ])
       .filter((event) => {
-        // Allow zoom only when holding Ctrl/Cmd key, or for touch gestures
         if (event.type === "wheel") {
-          return event.ctrlKey || event.metaKey; // Only zoom with Ctrl/Cmd + wheel
+          return event.ctrlKey || event.metaKey;
         }
-        // Allow drag for panning
-        if (event.type === "mousedown") {
-          return true;
-        }
-        // Allow touch gestures
-        if (event.type === "touchstart") {
+        if (event.type === "mousedown" || event.type === "touchstart") {
           return true;
         }
         return false;
       })
       .on("zoom", (event) => {
-        setCurrentTransform(event.transform);
+        const transform = event.transform;
+
+        console.log(transform.x, boundedWidth * 0.3);
+        // Check if we need to shift the viewport when panning reaches edges
+        if (transform.x > boundedWidth * 0.3 && viewportStartIndex > 0) {
+          // Panning right, shift viewport left (show earlier data)
+          setViewportStartIndex((prev) =>
+            Math.max(0, prev - Math.floor(visibleCandleCount * 0.5))
+          );
+          setCurrentTransform(
+            d3.zoomIdentity.scale(transform.k).translate(0, transform.y)
+          );
+        } else if (
+          transform.x < -boundedWidth * 0.3 &&
+          viewportStartIndex + visibleCandleCount < data.length
+        ) {
+          // Panning left, shift viewport right (show later data)
+          setViewportStartIndex((prev) =>
+            Math.min(
+              data.length - visibleCandleCount,
+              prev + Math.floor(visibleCandleCount * 0.5)
+            )
+          );
+          setCurrentTransform(
+            d3.zoomIdentity.scale(transform.k).translate(0, transform.y)
+          );
+        } else {
+          setCurrentTransform(transform);
+        }
       });
 
     const svg = d3.select(svgRef.current);
     svg.call(zoom);
 
-    // // Double-click to reset
-    // svg.on("dblclick.zoom", () => {
-    //   svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
-    // });
-
     return () => {
       svg.on(".zoom", null);
     };
-  }, [boundedWidth, boundedHeight, baseXScale]);
+  }, [
+    boundedWidth,
+    boundedHeight,
+    data,
+    visibleCandleCount,
+    viewportStartIndex,
+  ]);
 
-  console.log("visibleData", visibleData);
+  console.log("visibleData", visibleData, viewportData);
 
   return (
     <div
