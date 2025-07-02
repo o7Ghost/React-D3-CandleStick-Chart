@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ChartData } from "../type";
 import {
   CANDLE_UNIT_WIDTH,
@@ -22,24 +22,62 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const [dimensionsRef, dimensions] = useChartDimensions();
   const xAxis = useRef<SVGGElement | null>(null);
   const yAxis = useRef<SVGGElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [currentTransform, setCurrentTransform] = useState<d3.ZoomTransform>(
+    d3.zoomIdentity
+  );
 
-  const boundedWidth = dimensions.chartWidth - 30; // 30 for y-axis
+  const boundedWidth = dimensions.chartWidth - 35; // 30 for y-axis
   const boundedHeight = dimensions.chartHeight - 10; // 10 for x-axis
 
   const visibleCandleCount = Math.floor(boundedWidth / CANDLE_UNIT_WIDTH);
 
-  const visibleData =
+  // const visibleData =
+  //   data.length > visibleCandleCount
+  //     ? data.slice(data.length - visibleCandleCount)
+  //     : data;
+
+  // const xScale = d3.scaleTime(
+  //   [
+  //     new Date(visibleData[0]?.date),
+  //     new Date(visibleData[visibleData.length - 1]?.date),
+  //   ],
+  //   [0, boundedWidth]
+  // );
+
+  const initialVisibleData =
     data.length > visibleCandleCount
       ? data.slice(data.length - visibleCandleCount)
       : data;
 
-  const xScale = d3.scaleTime(
-    [
-      new Date(visibleData[0]?.date),
-      new Date(visibleData[visibleData.length - 1]?.date),
-    ],
+  const baseXScale = d3.scaleTime(
+    initialVisibleData.length > 0
+      ? [
+          new Date(initialVisibleData[0]?.date),
+          new Date(initialVisibleData[initialVisibleData.length - 1]?.date),
+        ]
+      : [new Date(), new Date()],
     [0, boundedWidth]
   );
+
+  const xScale = currentTransform.rescaleX(baseXScale);
+
+  const getVisibleData = useCallback(() => {
+    const [startDate, endDate] = xScale.domain();
+
+    const dateFilteredData = data.filter((d) => {
+      const date = new Date(d.date);
+      return date >= startDate && date <= endDate;
+    });
+
+    if (dateFilteredData.length > visibleCandleCount) {
+      return dateFilteredData.slice(-visibleCandleCount);
+    }
+
+    return dateFilteredData;
+  }, [data, xScale, visibleCandleCount]);
+
+  const visibleData = getVisibleData();
 
   const yScale = d3.scaleLinear(
     findLocalMinAndMax([
@@ -89,6 +127,57 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     }
   }, [yScale]);
 
+  useEffect(() => {
+    if (!svgRef.current) return;
+
+    if (!data || data.length === 0) {
+      // Clear any existing zoom behavior
+      const svg = d3.select(svgRef.current);
+      svg.on(".zoom", null);
+      return;
+    }
+
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 50]) // Min and max zoom levels
+      .translateExtent([
+        [-boundedWidth * 10, -Infinity], // Allow extensive panning
+        [boundedWidth * 10, Infinity],
+      ])
+      .filter((event) => {
+        // Allow zoom only when holding Ctrl/Cmd key, or for touch gestures
+        if (event.type === "wheel") {
+          return event.ctrlKey || event.metaKey; // Only zoom with Ctrl/Cmd + wheel
+        }
+        // Allow drag for panning
+        if (event.type === "mousedown") {
+          return true;
+        }
+        // Allow touch gestures
+        if (event.type === "touchstart") {
+          return true;
+        }
+        return false;
+      })
+      .on("zoom", (event) => {
+        setCurrentTransform(event.transform);
+      });
+
+    const svg = d3.select(svgRef.current);
+    svg.call(zoom);
+
+    // // Double-click to reset
+    // svg.on("dblclick.zoom", () => {
+    //   svg.transition().duration(500).call(zoom.transform, d3.zoomIdentity);
+    // });
+
+    return () => {
+      svg.on(".zoom", null);
+    };
+  }, [boundedWidth, boundedHeight, baseXScale]);
+
+  console.log("visibleData", visibleData);
+
   return (
     <div
       className="candle-stick-chart-container"
@@ -100,7 +189,9 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         className="candle-stick-chart"
         style={{
           display: "block",
+          cursor: data && data.length > 0 ? "grab" : "default",
         }}
+        ref={svgRef}
         width={dimensions.chartWidth}
         height={dimensions.chartHeight}
       >
