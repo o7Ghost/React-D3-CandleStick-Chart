@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChartData } from "../type";
 import {
   CANDLE_UNIT_WIDTH,
@@ -22,16 +22,34 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const [dimensionsRef, dimensions] = useChartDimensions();
   const xAxis = useRef<SVGGElement | null>(null);
   const yAxis = useRef<SVGGElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
 
   const boundedWidth = dimensions.chartWidth - 30; // 30 for y-axis
   const boundedHeight = dimensions.chartHeight - 10; // 10 for x-axis
 
   const visibleCandleCount = Math.floor(boundedWidth / CANDLE_UNIT_WIDTH);
 
-  const visibleData =
-    data.length > visibleCandleCount
-      ? data.slice(data.length - visibleCandleCount)
-      : data;
+  const getVisibleData = () => {
+    if (data.length <= visibleCandleCount) {
+      return data;
+    }
+
+    const candlesPerPixel = visibleCandleCount / boundedWidth;
+
+    const candleOffset = Math.floor(Math.abs(transform.x) * candlesPerPixel);
+
+    let startIndex: number;
+
+    startIndex = Math.max(0, data.length - visibleCandleCount - candleOffset);
+
+    startIndex = Math.min(startIndex, data.length - visibleCandleCount);
+    startIndex = Math.max(0, startIndex);
+
+    return data.slice(startIndex, startIndex + visibleCandleCount);
+  };
+
+  const visibleData = getVisibleData();
 
   const xScale = d3.scaleTime(
     [
@@ -48,6 +66,36 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     ]),
     [0, boundedHeight]
   );
+
+  // Setup zoom behavior
+  useEffect(() => {
+    if (!svgRef.current) return;
+
+    const maxTranslateX =
+      data.length > visibleCandleCount
+        ? (data.length - visibleCandleCount) *
+          (boundedWidth / visibleCandleCount)
+        : 0;
+
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 1]) // Disable scaling
+      .translateExtent([
+        [-maxTranslateX, 0],
+        [maxTranslateX, 0],
+      ]) // Limit horizontal pan
+      .on("zoom", (event) => {
+        const { transform } = event;
+        setTransform({ x: transform.x, y: 0, k: 1 });
+      });
+
+    d3.select(svgRef.current).call(zoom);
+
+    // Cleanup
+    return () => {
+      d3.select(svgRef.current).on(".zoom", null);
+    };
+  }, [data.length, visibleCandleCount, boundedWidth]);
 
   useEffect(() => {
     const xAxisGenerator = d3
@@ -96,6 +144,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       style={{ height: "100dvh" }}
     >
       <svg
+        ref={svgRef}
         preserveAspectRatio="xMidYMid meet"
         className="candle-stick-chart"
         style={{
