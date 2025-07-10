@@ -16,7 +16,7 @@ function App() {
       const reader = new FileReader();
 
       console.log("ran?");
-      const SLICE_SIZE = 5 * 1024 * 1024; // 1MB
+      const SLICE_SIZE = 1024 * 1024; // 1MB
       const startPosition = Math.max(0, file.size - SLICE_SIZE);
       const blobSlice = file.slice(startPosition, file.size);
 
@@ -60,7 +60,7 @@ function App() {
 
               const reversedLines = allLines.reverse();
               const dataLines = reversedLines
-                .slice(0, 5000)
+                .slice(0, 500)
                 .filter((line) => line.trim());
 
               const parsedData: ChartData[] = dataLines.reduce(
