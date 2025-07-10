@@ -71,7 +71,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   useEffect(() => {
     if (!svgRef.current) return;
 
-    const maxTranslateX =
+    const maxLeftTranslateX =
       data.length > visibleCandleCount
         ? (data.length - visibleCandleCount) *
           (boundedWidth / visibleCandleCount)
@@ -81,11 +81,12 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 1]) // Disable scaling
       .translateExtent([
-        [-maxTranslateX, 0],
-        [maxTranslateX, 0],
+        [-maxLeftTranslateX, 0],
+        [dimensions.chartWidth, 0],
       ]) // Limit horizontal pan
       .on("zoom", (event) => {
         const { transform } = event;
+        console.log("transform", transform.x);
         setTransform({ x: transform.x, y: 0, k: 1 });
       });
 
