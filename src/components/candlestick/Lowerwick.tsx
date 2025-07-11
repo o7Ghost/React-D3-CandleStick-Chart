@@ -27,7 +27,7 @@ export const Lowerwick = ({
             : yScale(d.low) - yScale(d.open);
         })
         .attr("x", (d) => {
-          return xScale(parseDate(d.date)) - 1 / 2;
+          return xScale(parseDate(d.timestamp)) - 1 / 2;
         })
         .attr("y", (d) => {
           return d.open > d.close ? yScale(d.close) : yScale(d.open);

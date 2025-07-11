@@ -51,7 +51,7 @@ export const calculateCandleStickSpacing = (chartData: ChartData[]) => {
   if (chartData.length < 2) return 0;
 
   const times = chartData
-    .map((x) => parseDate(x.date).getTime())
+    .map((x) => parseDate(x.timestamp).getTime())
     .sort((a, b) => a - b);
 
   let minInterval = times[1] - times[0];
@@ -75,7 +75,7 @@ export const calculateCandleStickWidth = (
   if (chartData.length === 0) return 0;
 
   const minMax = d3.extent(
-    chartData.map((chartData) => parseDate(chartData.date))
+    chartData.map((chartData) => parseDate(chartData.timestamp))
   ) as [Date, Date];
 
   const tempCandleWidth =

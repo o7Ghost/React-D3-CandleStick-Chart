@@ -16,8 +16,9 @@ function App() {
       const reader = new FileReader();
 
       console.log("ran?");
-      const SLICE_SIZE = 1024 * 1024; // 1MB
-      const blobSlice = file.slice(0, SLICE_SIZE);
+      const SLICE_SIZE = 10 * 1024 * 1024; // 1MB
+      const startPosition = Math.max(0, file.size - SLICE_SIZE);
+      const blobSlice = file.slice(startPosition, file.size);
 
       reader.onload = (e) => {
         const result = e.target?.result;
@@ -35,48 +36,64 @@ function App() {
             setFileContent(null);
             return;
           }
+          // Get header from the beginning of the file
+          const reader2 = new FileReader();
+          const headerSlice = file.slice(0, 1024); // Read first 1KB for header
 
-          const headerLine = allLines[0];
-          // Assuming comma as delimiter, trim whitespace from headers
-          const headers = headerLine.split(",").map((header) =>
-            header
-              .trim()
-              .toLowerCase()
-              .replace(/\s+(.)/g, (_, char) => char.toUpperCase())
-              .replace(/\s+/g, "")
-          );
+          reader2.onload = (e2) => {
+            const headerResult = e2.target?.result;
+            if (typeof headerResult === "string") {
+              const headerLines = headerResult.split("\n");
+              const headerLine = headerLines[0];
 
-          // Take up to the first 1000 data lines (excluding header)
-          const dataLines = allLines.slice(1, 501);
+              // Assuming comma as delimiter, trim whitespace from headers
+              const headers = headerLine.split(",").map((header) =>
+                header
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+(.)/g, (_, char) => char.toUpperCase())
+                  .replace(/\s+/g, "")
+              );
 
-          const parsedData: ChartData[] = dataLines.reduce(
-            (acc: any[], line: string) => {
-              // Trim whitespace from line and skip empty lines
-              const trimmedLine = line.trim();
-              if (!trimmedLine) {
-                return acc;
-              }
-              const values = trimmedLine
-                .split(",")
-                .map((value) => value.trim());
-              if (values.length === headers.length) {
-                const obj: { [key: string]: string } = {};
-                headers.forEach((header, index) => {
-                  obj[header] = values[index];
-                });
-                acc.push(obj);
-              } else {
-                console.warn(
-                  "Skipping line due to mismatched columns:",
-                  trimmedLine
-                );
-              }
-              return acc;
-            },
-            []
-          );
+              // Reverse the lines to read from bottom to top, then take first 500
 
-          setFileContent(parsedData);
+              const reversedLines = allLines.reverse();
+              const dataLines = reversedLines
+                .slice(0, 10000)
+                .filter((line) => line.trim());
+
+              const parsedData: ChartData[] = dataLines.reduce(
+                (acc: any[], line: string) => {
+                  // Trim whitespace from line and skip empty lines
+                  const trimmedLine = line.trim();
+                  if (!trimmedLine) {
+                    return acc;
+                  }
+                  const values = trimmedLine
+                    .split(",")
+                    .map((value) => value.trim());
+                  if (values.length === headers.length) {
+                    const obj: { [key: string]: string } = {};
+                    headers.forEach((header, index) => {
+                      obj[header] = values[index];
+                    });
+                    acc.unshift(obj);
+                  } else {
+                    console.warn(
+                      "Skipping line due to mismatched columns:",
+                      trimmedLine
+                    );
+                  }
+                  return acc;
+                },
+                []
+              );
+
+              setFileContent(parsedData);
+            }
+          };
+
+          reader2.readAsText(headerSlice);
         } else {
           console.error("File content could not be read as text or is empty.");
           setFileContent(null);
@@ -99,6 +116,7 @@ function App() {
   // console.log(new Date(fileContent[0].date));
 
   console.log("File content:", fileContent);
+
   return (
     <>
       <input type="file" onChange={handleFileChange} accept=".csv" />

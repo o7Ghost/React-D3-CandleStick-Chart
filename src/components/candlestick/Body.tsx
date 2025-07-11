@@ -39,7 +39,7 @@ export const Body = ({
           : yScale(d.open) - yScale(d.close);
       })
       .attr("x", (d) => {
-        return xScale(parseDate(d.date)) - bodyCandleWidth / 2;
+        return xScale(parseDate(d.timestamp)) - bodyCandleWidth / 2;
       })
       .attr("y", (d) => {
         return d.open > d.close ? yScale(d.open) : yScale(d.close);

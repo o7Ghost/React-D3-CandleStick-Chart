@@ -1,5 +1,5 @@
 export type ChartData = {
-  date: string | Date;
+  timestamp: string | Date;
   open: number;
   high: number;
   low: number;

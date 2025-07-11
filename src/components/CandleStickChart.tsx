@@ -19,6 +19,8 @@ import { Body, Lowerwick, Upperwick } from "./candlestick";
 //       4 hr  chart
 //       1 day chart
 const CandleStickChart = ({ data }: { data: ChartData[] }) => {
+  console.log("data", data);
+
   const [dimensionsRef, dimensions] = useChartDimensions();
   const xAxis = useRef<SVGGElement | null>(null);
   const yAxis = useRef<SVGGElement | null>(null);
@@ -53,8 +55,8 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
 
   const xScale = d3.scaleTime(
     [
-      new Date(visibleData[0]?.date),
-      new Date(visibleData[visibleData.length - 1]?.date),
+      new Date(visibleData[0]?.timestamp),
+      new Date(visibleData[visibleData.length - 1]?.timestamp),
     ],
     [0, boundedWidth]
   );
@@ -83,10 +85,9 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .translateExtent([
         [-maxLeftTranslateX, 0],
         [dimensions.chartWidth, 0],
-      ]) // Limit horizontal pan
+      ])
       .on("zoom", (event) => {
         const { transform } = event;
-        console.log("transform", transform.x);
         setTransform({ x: transform.x, y: 0, k: 1 });
       });
 
@@ -137,6 +138,8 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         .remove();
     }
   }, [yScale]);
+
+  console.log("visibleData", visibleData);
 
   return (
     <div

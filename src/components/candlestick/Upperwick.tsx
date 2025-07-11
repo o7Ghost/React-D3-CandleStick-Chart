@@ -31,7 +31,7 @@ export const Upperwick = ({
           : yScale(d.close) - yScale(d.high);
       })
       .attr("x", (d) => {
-        return xScale(parseDate(d.date)) - 1 / 2;
+        return xScale(parseDate(d.timestamp)) - 1 / 2;
       })
       .attr("y", (d) => {
         return yScale(d.high);
