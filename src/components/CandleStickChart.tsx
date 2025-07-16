@@ -19,15 +19,13 @@ import { Body, Lowerwick, Upperwick } from "./candlestick";
 //       4 hr  chart
 //       1 day chart
 const CandleStickChart = ({ data }: { data: ChartData[] }) => {
-  console.log("data", data);
-
   const [dimensionsRef, dimensions] = useChartDimensions();
   const xAxis = useRef<SVGGElement | null>(null);
   const yAxis = useRef<SVGGElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
 
-  const boundedWidth = dimensions.chartWidth - 30; // 30 for y-axis
+  const boundedWidth = dimensions.chartWidth - 40; // 30 for y-axis
   const boundedHeight = dimensions.chartHeight - 10; // 10 for x-axis
 
   const visibleCandleCount = Math.floor(boundedWidth / CANDLE_UNIT_WIDTH);
@@ -59,6 +57,13 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       new Date(visibleData[visibleData.length - 1]?.timestamp),
     ],
     [0, boundedWidth]
+  );
+
+  console.log(
+    findLocalMinAndMax([
+      ...visibleData.map((vd) => vd.high),
+      ...visibleData.map((vd) => vd.low),
+    ])
   );
 
   const yScale = d3.scaleLinear(
@@ -120,12 +125,27 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   }, [xScale]);
 
   useEffect(() => {
-    // const tickCount = Math.max(3, Math.floor(dimensions.chartHeight / 80));
+    const [minPrice, maxPrice] = findLocalMinAndMax([
+      ...visibleData.map((vd) => vd.high),
+      ...visibleData.map((vd) => vd.low),
+    ]);
+
+    const priceRange = (maxPrice ?? 0) - (minPrice ?? 0);
+
+    // Base: 80px per tick, but also scale with price range
+    // You can tweak the divisor (e.g., 80) and multiplier (e.g., 6) for your needs
+    const baseTickCount = Math.max(3, Math.floor(boundedHeight / 80));
+    const rangeFactor = Math.max(1, Math.floor(priceRange / 6));
+    const tickCount = Math.max(
+      3,
+      Math.min(baseTickCount, baseTickCount + rangeFactor)
+    );
 
     const yAxisGenerator = d3
       .axisRight(yScale)
       .tickSize(dimensions.chartWidth)
       // .ticks(tickCount)
+      .ticks(tickCount)
       // .tickFormat((d) => {
       //   return d3.format(".2f")(d);
       // })
@@ -158,7 +178,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         height={dimensions.chartHeight}
       >
         <g ref={xAxis} transform={`translate(0, -10)`} />
-        <g ref={yAxis} transform={`translate(-30, 0)`} />
+        <g ref={yAxis} transform={`translate(-40, 0)`} />
 
         <Upperwick xScale={xScale} yScale={yScale} chartData={visibleData} />
         <Body xScale={xScale} yScale={yScale} chartData={visibleData} />
