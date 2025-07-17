@@ -4,10 +4,11 @@ import { ChartData } from "../type";
 import {
   CANDLE_UNIT_WIDTH,
   MINUTE_DISPLAY_FORMAT,
+  MINUTE_INTERVAL,
   SVG_DOMAIN_CLASS,
 } from "../constant";
 import { useChartDimensions } from "../hooks";
-import { findLocalMinAndMax } from "../utils";
+import { computeYAxisTicks, findLocalMinAndMax } from "../utils";
 import { Body, Lowerwick, Upperwick } from "./candlestick";
 
 // option to load all at once or load by some window
@@ -59,20 +60,12 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     [0, boundedWidth]
   );
 
-  console.log(
-    findLocalMinAndMax([
-      ...visibleData.map((vd) => vd.high),
-      ...visibleData.map((vd) => vd.low),
-    ])
-  );
+  const bounds = findLocalMinAndMax([
+    ...visibleData.map((vd) => vd.high),
+    ...visibleData.map((vd) => vd.low),
+  ]);
 
-  const yScale = d3.scaleLinear(
-    findLocalMinAndMax([
-      ...visibleData.map((vd) => vd.high),
-      ...visibleData.map((vd) => vd.low),
-    ]),
-    [0, boundedHeight]
-  );
+  const yScale = d3.scaleLinear(bounds, [0, boundedHeight]);
 
   // Setup zoom behavior
   useEffect(() => {
@@ -107,7 +100,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   useEffect(() => {
     const xAxisGenerator = d3
       .axisBottom(xScale)
-      .ticks(d3.timeMinute.every(15))
+      .ticks(d3.timeMinute.every(MINUTE_INTERVAL))
       .tickFormat((d) => {
         const date = d as Date;
         return d3.timeFormat(MINUTE_DISPLAY_FORMAT)(date);
@@ -125,30 +118,15 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   }, [xScale]);
 
   useEffect(() => {
-    const [minPrice, maxPrice] = findLocalMinAndMax([
-      ...visibleData.map((vd) => vd.high),
-      ...visibleData.map((vd) => vd.low),
-    ]);
-
-    const priceRange = (maxPrice ?? 0) - (minPrice ?? 0);
-
-    // Base: 80px per tick, but also scale with price range
-    // You can tweak the divisor (e.g., 80) and multiplier (e.g., 6) for your needs
-    const baseTickCount = Math.max(3, Math.floor(boundedHeight / 80));
-    const rangeFactor = Math.max(1, Math.floor(priceRange / 6));
-    const tickCount = Math.max(
-      3,
-      Math.min(baseTickCount, baseTickCount + rangeFactor)
-    );
+    const tickCount = computeYAxisTicks(bounds, boundedHeight);
 
     const yAxisGenerator = d3
       .axisRight(yScale)
       .tickSize(dimensions.chartWidth)
-      // .ticks(tickCount)
       .ticks(tickCount)
-      // .tickFormat((d) => {
-      //   return d3.format(".2f")(d);
-      // })
+      .tickFormat((d) => {
+        return d3.format(".2f")(d);
+      })
       .tickSizeOuter(0);
 
     if (yAxis.current) {
@@ -158,8 +136,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         .remove();
     }
   }, [yScale]);
-
-  console.log("visibleData", visibleData);
 
   return (
     <div

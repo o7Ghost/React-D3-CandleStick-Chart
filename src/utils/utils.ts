@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import { ChartData } from "../type";
+import { DEFAULT_PIXELS_PER_CANDLE, MIN_PRICE_TICK_COUNT } from "../constant";
 
 /**
  * Finds the minimum and maximum values in an array of numbers.
@@ -82,4 +83,39 @@ export const calculateCandleStickWidth = (
     xScale(minMax[0].getTime() + candleSpacing) - xScale(minMax[0].getTime());
 
   return tempCandleWidth * 0.7;
+};
+
+export const computeYAxisTicks = (
+  bounds: [number, number] | [],
+  boundedHeight: number
+) => {
+  const [upperBoundPrice, lowerBoundPrice] = bounds;
+
+  const minPrice = lowerBoundPrice ?? 0;
+  const maxPrice = upperBoundPrice ?? 0;
+
+  const priceRange = maxPrice - minPrice;
+
+  const pxPerPrice =
+    priceRange === 0
+      ? DEFAULT_PIXELS_PER_CANDLE
+      : Math.max(boundedHeight / priceRange, DEFAULT_PIXELS_PER_CANDLE);
+
+  const approxTickCount = Math.max(3, Math.floor(boundedHeight / pxPerPrice));
+
+  const tickStep = d3.tickStep(minPrice, maxPrice, approxTickCount);
+
+  let tickCount = Math.ceil(priceRange / tickStep);
+
+  tickCount = Math.max(MIN_PRICE_TICK_COUNT, tickCount);
+
+  return {
+    minPrice,
+    maxPrice,
+    priceRange,
+    pxPerPrice,
+    approxTickCount,
+    tickStep,
+    tickCount,
+  };
 };

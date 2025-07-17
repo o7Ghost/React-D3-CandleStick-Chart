@@ -6,3 +6,9 @@ export const CANDLE_UNIT_WIDTH = CANDLE_WIDTH + CANDLE_SPACING; // Total width p
 export const MINUTE_DISPLAY_FORMAT = "%H:%M";
 
 export const SVG_DOMAIN_CLASS = ".domain";
+
+export const DEFAULT_PIXELS_PER_CANDLE = 10;
+
+export const MIN_PRICE_TICK_COUNT = 3;
+
+export const MINUTE_INTERVAL = 15;
