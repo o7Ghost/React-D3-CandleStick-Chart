@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { ChartData } from "../type";
 import {
   CANDLE_UNIT_WIDTH,
+  CHART_HEIGHT_DEFAULT_PADDING,
+  CHART_WIDTH_DEFAULT_PADDING,
   MINUTE_DISPLAY_FORMAT,
   MINUTE_INTERVAL,
   SVG_DOMAIN_CLASS,
@@ -26,10 +28,11 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
 
-  const boundedWidth = dimensions.chartWidth - 40; // 30 for y-axis
-  const boundedHeight = dimensions.chartHeight - 10; // 10 for x-axis
+  const boundedWidth = dimensions.chartWidth - CHART_WIDTH_DEFAULT_PADDING;
+  const boundedHeight = dimensions.chartHeight - CHART_HEIGHT_DEFAULT_PADDING;
 
-  const visibleCandleCount = Math.floor(boundedWidth / CANDLE_UNIT_WIDTH);
+  const visibleCandleCount =
+    Math.floor(boundedWidth / CANDLE_UNIT_WIDTH) * transform.k;
 
   const getVisibleData = () => {
     if (data.length <= visibleCandleCount) {
@@ -79,14 +82,17 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([1, 1]) // Disable scaling
+      .scaleExtent([0.5, 5]) // Disable zoom for now...
       .translateExtent([
         [-maxLeftTranslateX, 0],
         [dimensions.chartWidth, 0],
       ])
       .on("zoom", (event) => {
         const { transform } = event;
-        setTransform({ x: transform.x, y: 0, k: 1 });
+
+        console.log("zoom event", transform);
+
+        setTransform({ x: transform.x, y: 0, k: transform.k });
       });
 
     d3.select(svgRef.current).call(zoom);
@@ -153,8 +159,14 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         width={dimensions.chartWidth}
         height={dimensions.chartHeight}
       >
-        <g ref={xAxis} transform={`translate(0, -10)`} />
-        <g ref={yAxis} transform={`translate(-40, 0)`} />
+        <g
+          ref={xAxis}
+          transform={`translate(0, -${CHART_HEIGHT_DEFAULT_PADDING})`}
+        />
+        <g
+          ref={yAxis}
+          transform={`translate(-${CHART_WIDTH_DEFAULT_PADDING}, 0)`}
+        />
 
         <Upperwick xScale={xScale} yScale={yScale} chartData={visibleData} />
         <Body xScale={xScale} yScale={yScale} chartData={visibleData} />
