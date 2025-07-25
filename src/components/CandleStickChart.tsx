@@ -32,7 +32,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const boundedHeight = dimensions.chartHeight - CHART_HEIGHT_DEFAULT_PADDING;
 
   const visibleCandleCount =
-    Math.floor(boundedWidth / CANDLE_UNIT_WIDTH) * transform.k;
+    Math.floor(boundedWidth / CANDLE_UNIT_WIDTH) / transform.k;
 
   const getVisibleData = () => {
     if (data.length <= visibleCandleCount) {
@@ -44,6 +44,8 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     const candleOffset = Math.floor(Math.abs(transform.x) * candlesPerPixel);
 
     let startIndex: number;
+
+    // console.log("what is candle offset", candleOffset);
 
     startIndex = Math.max(0, data.length - visibleCandleCount - candleOffset);
 
@@ -76,23 +78,32 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
 
     const maxLeftTranslateX =
       data.length > visibleCandleCount
-        ? (data.length - visibleCandleCount) *
-          (boundedWidth / visibleCandleCount)
+        ? (data.length - visibleCandleCount) * CANDLE_UNIT_WIDTH
         : 0;
+
+    const maxRightTranslateX = dimensions.chartWidth / transform.k;
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 5]) // Disable zoom for now...
+      .scaleExtent([0.05, 1])
       .translateExtent([
         [-maxLeftTranslateX, 0],
-        [dimensions.chartWidth, 0],
+        [maxRightTranslateX, 0],
       ])
       .on("zoom", (event) => {
         const { transform } = event;
 
-        console.log("zoom event", transform);
+        setTransform((prev) => {
+          if (transform.k !== prev.k) {
+            return { ...prev, k: transform.k };
+          }
 
-        setTransform({ x: transform.x, y: 0, k: transform.k });
+          if (transform.x !== prev.x) {
+            return { ...prev, x: transform.x };
+          }
+
+          return prev;
+        });
       });
 
     d3.select(svgRef.current).call(zoom);
@@ -143,11 +154,13 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     }
   }, [yScale]);
 
+  console.log("Visible data:", visibleData);
+
   return (
     <div
       className="candle-stick-chart-container"
       ref={dimensionsRef}
-      style={{ height: "100dvh" }}
+      style={{ height: 1000 }}
     >
       <svg
         ref={svgRef}
