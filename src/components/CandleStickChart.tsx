@@ -135,7 +135,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   }, [xScale]);
 
   useEffect(() => {
-    const tickCount = computeYAxisTicks(bounds, boundedHeight);
+    const { tickCount } = computeYAxisTicks(bounds, boundedHeight);
 
     const yAxisGenerator = d3
       .axisRight(yScale)
