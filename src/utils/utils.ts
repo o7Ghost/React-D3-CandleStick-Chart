@@ -119,3 +119,15 @@ export const computeYAxisTicks = (
     tickCount,
   };
 };
+
+export const calculateZoomBounds = (leftBound: number, rightBound: number) => {
+  // Calculate total range
+  const totalRange = rightBound + leftBound;
+
+  console.log(leftBound, rightBound, totalRange);
+
+  // Calculate k₀ using the ratio formula
+  const k0 = rightBound / totalRange;
+
+  return k0;
+};

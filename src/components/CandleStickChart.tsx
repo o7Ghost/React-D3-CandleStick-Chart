@@ -10,7 +10,11 @@ import {
   SVG_DOMAIN_CLASS,
 } from "../constant";
 import { useChartDimensions } from "../hooks";
-import { computeYAxisTicks, findLocalMinAndMax } from "../utils";
+import {
+  calculateZoomBounds,
+  computeYAxisTicks,
+  findLocalMinAndMax,
+} from "../utils";
 import { Body, Lowerwick, Upperwick } from "./candlestick";
 
 // option to load all at once or load by some window
@@ -27,32 +31,57 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const yAxis = useRef<SVGGElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
+  const [maxBounds, setMaxBounds] = useState({ leftBound: 0, rightBound: 0 });
 
   const boundedWidth = dimensions.chartWidth - CHART_WIDTH_DEFAULT_PADDING;
   const boundedHeight = dimensions.chartHeight - CHART_HEIGHT_DEFAULT_PADDING;
 
-  const visibleCandleCount =
-    Math.floor(boundedWidth / CANDLE_UNIT_WIDTH) / transform.k;
+  const visibleCandleCount = Math.floor(
+    dimensions.chartWidth / CANDLE_UNIT_WIDTH
+  );
 
   const getVisibleData = () => {
-    if (data.length <= visibleCandleCount) {
+    const effectiveVisibleCandleCount = Math.floor(
+      visibleCandleCount / transform.k
+    );
+
+    if (data.length <= effectiveVisibleCandleCount) {
       return data;
     }
 
-    const candlesPerPixel = visibleCandleCount / boundedWidth;
+    const candlesPerPixel =
+      effectiveVisibleCandleCount / transform.k / dimensions.chartWidth;
 
-    const candleOffset = Math.floor(Math.abs(transform.x) * candlesPerPixel);
+    const scalingOffSetBalance = (1 - transform.k) * dimensions.chartWidth;
+
+    let candleOffset =
+      (parseFloat(Math.abs(transform.x).toFixed(4)) -
+        parseFloat(scalingOffSetBalance.toFixed(4))) *
+      candlesPerPixel;
+
+    console.log(
+      "STUFF",
+      Math.abs(transform.x),
+      scalingOffSetBalance,
+      1 - transform.k,
+      transform.k,
+      parseFloat(Math.abs(transform.x).toFixed(4)),
+      parseFloat(scalingOffSetBalance.toFixed(4)),
+      candleOffset
+    );
 
     let startIndex: number;
 
-    // console.log("what is candle offset", candleOffset);
+    startIndex = Math.max(
+      0,
+      data.length - effectiveVisibleCandleCount - candleOffset
+    );
+    startIndex = Math.min(
+      startIndex,
+      data.length - effectiveVisibleCandleCount
+    );
 
-    startIndex = Math.max(0, data.length - visibleCandleCount - candleOffset);
-
-    startIndex = Math.min(startIndex, data.length - visibleCandleCount);
-    startIndex = Math.max(0, startIndex);
-
-    return data.slice(startIndex, startIndex + visibleCandleCount);
+    return data.slice(startIndex, startIndex + effectiveVisibleCandleCount);
   };
 
   const visibleData = getVisibleData();
@@ -72,7 +101,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
 
   const yScale = d3.scaleLinear(bounds, [0, boundedHeight]);
 
-  // Setup zoom behavior
   useEffect(() => {
     if (!svgRef.current) return;
 
@@ -81,11 +109,21 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         ? (data.length - visibleCandleCount) * CANDLE_UNIT_WIDTH
         : 0;
 
-    const maxRightTranslateX = dimensions.chartWidth / transform.k;
+    const maxRightTranslateX = dimensions.chartWidth;
+
+    setMaxBounds({
+      leftBound: maxLeftTranslateX,
+      rightBound: maxRightTranslateX,
+    });
+
+    const zoomOutBound = calculateZoomBounds(
+      maxLeftTranslateX,
+      maxRightTranslateX
+    );
 
     const zoom = d3
       .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.05, 1])
+      .scaleExtent([zoomOutBound, 1])
       .translateExtent([
         [-maxLeftTranslateX, 0],
         [maxRightTranslateX, 0],
@@ -93,17 +131,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .on("zoom", (event) => {
         const { transform } = event;
 
-        setTransform((prev) => {
-          if (transform.k !== prev.k) {
-            return { ...prev, k: transform.k };
-          }
-
-          if (transform.x !== prev.x) {
-            return { ...prev, x: transform.x };
-          }
-
-          return prev;
-        });
+        setTransform(transform);
       });
 
     d3.select(svgRef.current).call(zoom);
@@ -112,7 +140,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     return () => {
       d3.select(svgRef.current).on(".zoom", null);
     };
-  }, [data.length, visibleCandleCount, boundedWidth]);
+  }, [data.length, boundedWidth]);
 
   useEffect(() => {
     const xAxisGenerator = d3
@@ -162,6 +190,14 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       ref={dimensionsRef}
       style={{ height: 1000 }}
     >
+      <div>X: {transform.x}</div>
+      <div>Zoom: {transform.k}</div>
+      <div>Right Bound: {maxBounds.rightBound}</div>
+      <div>Left Bound: {maxBounds.leftBound}</div>
+      <div>visiable data: {visibleData.length}</div>
+      <div>
+        {calculateZoomBounds(maxBounds.leftBound, maxBounds.rightBound)}
+      </div>
       <svg
         ref={svgRef}
         preserveAspectRatio="xMidYMid meet"
