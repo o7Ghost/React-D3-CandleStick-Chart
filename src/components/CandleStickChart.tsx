@@ -49,8 +49,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       return data;
     }
 
-    const candlesPerPixel =
-      effectiveVisibleCandleCount / transform.k / dimensions.chartWidth;
+    const candlesPerPixel = effectiveVisibleCandleCount / dimensions.chartWidth;
 
     const scalingOffSetBalance = (1 - transform.k) * dimensions.chartWidth;
 
@@ -59,16 +58,16 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         parseFloat(scalingOffSetBalance.toFixed(4))) *
       candlesPerPixel;
 
-    console.log(
-      "STUFF",
-      Math.abs(transform.x),
-      scalingOffSetBalance,
-      1 - transform.k,
-      transform.k,
-      parseFloat(Math.abs(transform.x).toFixed(4)),
-      parseFloat(scalingOffSetBalance.toFixed(4)),
-      candleOffset
-    );
+    // console.log(
+    //   "STUFF",
+    //   Math.abs(transform.x),
+    //   scalingOffSetBalance,
+    //   1 - transform.k,
+    //   transform.k,
+    //   parseFloat(Math.abs(transform.x).toFixed(4)),
+    //   parseFloat(scalingOffSetBalance.toFixed(4)),
+    //   candleOffset
+    // );
 
     let startIndex: number;
 
@@ -76,11 +75,13 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       0,
       data.length - effectiveVisibleCandleCount - candleOffset
     );
-    startIndex = Math.min(
-      startIndex,
-      data.length - effectiveVisibleCandleCount
-    );
 
+    // startIndex = Math.min(
+    //   startIndex,
+    //   data.length - effectiveVisibleCandleCount
+    // );
+
+    // console.log("startIndex", startIndex);
     return data.slice(startIndex, startIndex + effectiveVisibleCandleCount);
   };
 
@@ -126,12 +127,12 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .scaleExtent([zoomOutBound, 1])
       .translateExtent([
         [-maxLeftTranslateX, 0],
-        [maxRightTranslateX, 0],
+        [maxRightTranslateX, 1000],
       ])
       .on("zoom", (event) => {
         const { transform } = event;
 
-        setTransform(transform);
+        setTransform({ ...transform, x: Math.max(0, transform.x) });
       });
 
     d3.select(svgRef.current).call(zoom);
@@ -190,8 +191,10 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       ref={dimensionsRef}
       style={{ height: 1000 }}
     >
+      {/* <div>Y: {transform.y}</div> */}
       <div>X: {transform.x}</div>
       <div>Zoom: {transform.k}</div>
+
       <div>Right Bound: {maxBounds.rightBound}</div>
       <div>Left Bound: {maxBounds.leftBound}</div>
       <div>visiable data: {visibleData.length}</div>
