@@ -127,7 +127,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       .scaleExtent([zoomOutBound, 1])
       .translateExtent([
         [-maxLeftTranslateX, 0],
-        [maxRightTranslateX, 1000],
+        [maxRightTranslateX, 0],
       ])
       .on("zoom", (event) => {
         const { transform } = event;
