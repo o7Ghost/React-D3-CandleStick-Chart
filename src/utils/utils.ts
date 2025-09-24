@@ -129,3 +129,53 @@ export const calculateZoomBounds = (leftBound: number, rightBound: number) => {
 
   return k0;
 };
+
+export const getOptimalTicksForZoom = (
+  boundedWidth: number,
+  visibleData: any[]
+) => {
+  const availableWidth = boundedWidth;
+  const minTickSpacing = 60;
+
+  const maxTicks = Math.floor(availableWidth / minTickSpacing);
+
+  const startTime = new Date(visibleData[0]?.timestamp);
+  const endTime = new Date(visibleData[visibleData.length - 1]?.timestamp);
+
+  const timeSpanMs = endTime.getTime() - startTime.getTime();
+  const timeSpanMinutes = timeSpanMs / (1000 * 60);
+
+  const minutesPerTick = timeSpanMinutes / maxTicks;
+
+  // Smart interval selection (similar to TradingView)
+  let interval: d3.TimeInterval;
+  let format: string;
+
+  if (minutesPerTick <= 1) {
+    interval = d3.timeMinute.every(1)!;
+    format = "%H:%M";
+  } else if (minutesPerTick <= 5) {
+    interval = d3.timeMinute.every(5)!;
+    format = "%H:%M";
+  } else if (minutesPerTick <= 15) {
+    interval = d3.timeMinute.every(15)!;
+    format = "%H:%M";
+  } else if (minutesPerTick <= 30) {
+    interval = d3.timeMinute.every(30)!;
+    format = "%H:%M";
+  } else if (minutesPerTick <= 60) {
+    interval = d3.timeHour.every(1)!;
+    format = "%H:%M";
+  } else if (minutesPerTick <= 240) {
+    interval = d3.timeHour.every(4)!;
+    format = "%m/%d %H:00";
+  } else if (minutesPerTick <= 1440) {
+    interval = d3.timeDay.every(1)!;
+    format = "%m/%d";
+  } else {
+    interval = d3.timeWeek.every(1)!;
+    format = "%m/%d";
+  }
+
+  return { interval, format };
+};

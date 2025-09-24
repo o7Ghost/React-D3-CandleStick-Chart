@@ -14,6 +14,7 @@ import {
   calculateZoomBounds,
   computeYAxisTicks,
   findLocalMinAndMax,
+  getOptimalTicksForZoom,
 } from "../utils";
 import { Body, Lowerwick, Upperwick } from "./candlestick";
 
@@ -144,12 +145,16 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   }, [data.length, boundedWidth]);
 
   useEffect(() => {
+    const { interval, format } = getOptimalTicksForZoom(
+      boundedWidth,
+      visibleData
+    );
+
     const xAxisGenerator = d3
       .axisBottom(xScale)
-      .ticks(d3.timeMinute.every(MINUTE_INTERVAL))
+      .ticks(interval)
       .tickFormat((d) => {
-        const date = d as Date;
-        return d3.timeFormat(MINUTE_DISPLAY_FORMAT)(date);
+        return d3.timeFormat(format)(d as Date);
       })
 
       .tickSize(dimensions.chartHeight)
