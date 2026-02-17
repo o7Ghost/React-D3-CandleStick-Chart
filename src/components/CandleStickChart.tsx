@@ -9,7 +9,6 @@ import {
 } from "../constant";
 import { useChartDimensions } from "../hooks";
 import {
-  calculateZoomBounds,
   computeYAxisTicks,
   findLocalMinAndMax,
   getOptimalTicksForZoom,
@@ -29,52 +28,49 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const xAxis = useRef<SVGGElement | null>(null);
   const yAxis = useRef<SVGGElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const [transform, setTransform] = useState({ x: 0, y: 0, k: 1 });
-  const [maxBounds, setMaxBounds] = useState({ leftBound: 0, rightBound: 0 });
+
+  // used for panning and zooming
+  const [endIndex, setEndIndex] = useState<number | null>(null);
 
   const boundedWidth = dimensions.chartWidth - CHART_WIDTH_DEFAULT_PADDING;
   const boundedHeight = dimensions.chartHeight - CHART_HEIGHT_DEFAULT_PADDING;
 
+  // CANDLE_UNIT_WIDTH accounts for the CANDLE_WIDTH and CANDLE_SPACING
   const visibleCandleCount = Math.floor(
     dimensions.chartWidth / CANDLE_UNIT_WIDTH,
   );
 
-  const getVisibleData = () => {
-    const effectiveVisibleCandleCount = Math.floor(
-      visibleCandleCount / transform.k,
-    );
+  // used for zooming
+  const [candlesInView, setCandlesInView] = useState(visibleCandleCount);
 
-    if (data.length <= effectiveVisibleCandleCount) {
-      return data;
-    }
+  const spacing = boundedWidth / candlesInView;
 
-    const candlesPerPixel = effectiveVisibleCandleCount / dimensions.chartWidth;
+  const effectiveEndIndex = endIndex ?? data.length;
 
-    const scalingOffSetBalance = (1 - transform.k) * dimensions.chartWidth;
+  const clampedEnd = Math.min(
+    data.length,
+    Math.max(visibleCandleCount, effectiveEndIndex),
+  );
 
-    let candleOffset =
-      (parseFloat(Math.abs(transform.x).toFixed(4)) -
-        parseFloat(scalingOffSetBalance.toFixed(4))) *
-      candlesPerPixel;
+  // calculate the range of data
+  const exactStart = clampedEnd - candlesInView;
 
-    let startIndex: number;
+  const startIdx = Math.max(0, Math.floor(exactStart));
+  // +1 for the boundary candle (slice is exclusive), +ceil(...) to cover the padding zone
+  const rightBuffer = 1 + Math.ceil(CHART_WIDTH_DEFAULT_PADDING / spacing);
+  const endIdx = Math.min(data.length, Math.ceil(clampedEnd) + rightBuffer);
 
-    startIndex = Math.max(
-      0,
-      data.length - effectiveVisibleCandleCount - candleOffset,
-    );
+  const visibleData = data.length === 0 ? [] : data.slice(startIdx, endIdx);
 
-    return data.slice(startIndex, startIndex + effectiveVisibleCandleCount);
-  };
-
-  const visibleData = getVisibleData();
+  // partialTransform accounts for the case when we have a fractional candle in view, so we need to shift the chart accordingly
+  const partialTransform = (Math.max(0, exactStart) - startIdx) * spacing;
 
   const xScale = d3.scaleTime(
     [
       new Date(visibleData[0]?.timestamp),
       new Date(visibleData[visibleData.length - 1]?.timestamp),
     ],
-    [0, boundedWidth],
+    [0, (visibleData.length - 1) * spacing],
   );
 
   const bounds = findLocalMinAndMax([
@@ -85,45 +81,33 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const yScale = d3.scaleLinear(bounds, [0, boundedHeight]);
 
   useEffect(() => {
-    if (!svgRef.current) return;
+    if (!svgRef.current) {
+      return;
+    }
 
-    const maxLeftTranslateX =
-      data.length > visibleCandleCount
-        ? (data.length - visibleCandleCount) * CANDLE_UNIT_WIDTH
-        : 0;
+    const drag = d3.drag<SVGSVGElement, unknown>().on("drag", (event) => {
+      // spacing with candle width and spacing in between included
+      const candleWidthPx = spacing;
+      const idxDelta = -event.dx / candleWidthPx;
 
-    const maxRightTranslateX = dimensions.chartWidth;
+      setEndIndex((prev) => {
+        const current = prev ?? data.length;
+        // minEnd is the smallest end index we can have.
+        // in case that data.length is smaller than inital candle view
+        // we take the min
+        const minEnd = Math.min(candlesInView, data.length);
 
-    setMaxBounds({
-      leftBound: maxLeftTranslateX,
-      rightBound: maxRightTranslateX,
+        // minEnd here insures that we don't pan beyond what we have
+        return Math.max(minEnd, Math.min(data.length, current + idxDelta));
+      });
     });
 
-    const zoomOutBound = calculateZoomBounds(
-      maxLeftTranslateX,
-      maxRightTranslateX,
-    );
+    d3.select(svgRef.current).call(drag);
 
-    const zoom = d3
-      .zoom<SVGSVGElement, unknown>()
-      .scaleExtent([zoomOutBound, 1])
-      .translateExtent([
-        [-maxLeftTranslateX, 0],
-        [maxRightTranslateX, 0],
-      ])
-      .on("zoom", (event) => {
-        const { transform } = event;
-
-        setTransform({ ...transform, x: Math.max(0, transform.x) });
-      });
-
-    d3.select(svgRef.current).call(zoom);
-
-    // Cleanup
     return () => {
-      d3.select(svgRef.current).on(".zoom", null);
+      d3.select(svgRef.current).on(".drag", null);
     };
-  }, [data.length, boundedWidth]);
+  }, [data.length, spacing]);
 
   useEffect(() => {
     const { interval, format } = getOptimalTicksForZoom(
@@ -175,16 +159,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       ref={dimensionsRef}
       style={{ height: 1000 }}
     >
-      {/* <div>Y: {transform.y}</div> */}
-      <div>X: {transform.x}</div>
-      <div>Zoom: {transform.k}</div>
-
-      <div>Right Bound: {maxBounds.rightBound}</div>
-      <div>Left Bound: {maxBounds.leftBound}</div>
-      <div>visiable data: {visibleData.length}</div>
-      <div>
-        {calculateZoomBounds(maxBounds.leftBound, maxBounds.rightBound)}
-      </div>
       <svg
         ref={svgRef}
         preserveAspectRatio="xMidYMid meet"
@@ -197,16 +171,18 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       >
         <g
           ref={xAxis}
-          transform={`translate(0, -${CHART_HEIGHT_DEFAULT_PADDING})`}
+          transform={`translate(${-partialTransform}, -${CHART_HEIGHT_DEFAULT_PADDING})`}
         />
         <g
           ref={yAxis}
           transform={`translate(-${CHART_WIDTH_DEFAULT_PADDING}, 0)`}
         />
 
-        <Upperwick xScale={xScale} yScale={yScale} chartData={visibleData} />
-        <Body xScale={xScale} yScale={yScale} chartData={visibleData} />
-        <Lowerwick xScale={xScale} yScale={yScale} chartData={visibleData} />
+        <g transform={`translate(${-partialTransform}, 0)`}>
+          <Upperwick xScale={xScale} yScale={yScale} chartData={visibleData} />
+          <Body xScale={xScale} yScale={yScale} chartData={visibleData} />
+          <Lowerwick xScale={xScale} yScale={yScale} chartData={visibleData} />
+        </g>
       </svg>
     </div>
   );

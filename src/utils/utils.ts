@@ -71,12 +71,12 @@ export const calculateCandleStickSpacing = (chartData: ChartData[]) => {
 export const calculateCandleStickWidth = (
   candleSpacing: number,
   chartData: ChartData[],
-  xScale: d3.ScaleTime<number, number, never>
+  xScale: d3.ScaleTime<number, number, never>,
 ) => {
   if (chartData.length === 0) return 0;
 
   const minMax = d3.extent(
-    chartData.map((chartData) => parseDate(chartData.timestamp))
+    chartData.map((chartData) => parseDate(chartData.timestamp)),
   ) as [Date, Date];
 
   const tempCandleWidth =
@@ -87,7 +87,7 @@ export const calculateCandleStickWidth = (
 
 export const computeYAxisTicks = (
   bounds: [number, number] | [],
-  boundedHeight: number
+  boundedHeight: number,
 ) => {
   const [upperBoundPrice, lowerBoundPrice] = bounds;
 
@@ -120,19 +120,9 @@ export const computeYAxisTicks = (
   };
 };
 
-export const calculateZoomBounds = (leftBound: number, rightBound: number) => {
-  // Calculate total range
-  const totalRange = rightBound + leftBound;
-
-  // Calculate k₀ using the ratio formula
-  const k0 = rightBound / totalRange;
-
-  return k0;
-};
-
 export const getOptimalTicksForZoom = (
   boundedWidth: number,
-  visibleData: any[]
+  visibleData: any[],
 ) => {
   const availableWidth = boundedWidth;
   const minTickSpacing = 60;
