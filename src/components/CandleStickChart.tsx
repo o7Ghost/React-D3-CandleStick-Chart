@@ -5,8 +5,6 @@ import {
   CANDLE_UNIT_WIDTH,
   CHART_HEIGHT_DEFAULT_PADDING,
   CHART_WIDTH_DEFAULT_PADDING,
-  MINUTE_DISPLAY_FORMAT,
-  MINUTE_INTERVAL,
   SVG_DOMAIN_CLASS,
 } from "../constant";
 import { useChartDimensions } from "../hooks";
@@ -38,12 +36,12 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const boundedHeight = dimensions.chartHeight - CHART_HEIGHT_DEFAULT_PADDING;
 
   const visibleCandleCount = Math.floor(
-    dimensions.chartWidth / CANDLE_UNIT_WIDTH
+    dimensions.chartWidth / CANDLE_UNIT_WIDTH,
   );
 
   const getVisibleData = () => {
     const effectiveVisibleCandleCount = Math.floor(
-      visibleCandleCount / transform.k
+      visibleCandleCount / transform.k,
     );
 
     if (data.length <= effectiveVisibleCandleCount) {
@@ -59,30 +57,13 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         parseFloat(scalingOffSetBalance.toFixed(4))) *
       candlesPerPixel;
 
-    // console.log(
-    //   "STUFF",
-    //   Math.abs(transform.x),
-    //   scalingOffSetBalance,
-    //   1 - transform.k,
-    //   transform.k,
-    //   parseFloat(Math.abs(transform.x).toFixed(4)),
-    //   parseFloat(scalingOffSetBalance.toFixed(4)),
-    //   candleOffset
-    // );
-
     let startIndex: number;
 
     startIndex = Math.max(
       0,
-      data.length - effectiveVisibleCandleCount - candleOffset
+      data.length - effectiveVisibleCandleCount - candleOffset,
     );
 
-    // startIndex = Math.min(
-    //   startIndex,
-    //   data.length - effectiveVisibleCandleCount
-    // );
-
-    // console.log("startIndex", startIndex);
     return data.slice(startIndex, startIndex + effectiveVisibleCandleCount);
   };
 
@@ -93,7 +74,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
       new Date(visibleData[0]?.timestamp),
       new Date(visibleData[visibleData.length - 1]?.timestamp),
     ],
-    [0, boundedWidth]
+    [0, boundedWidth],
   );
 
   const bounds = findLocalMinAndMax([
@@ -120,7 +101,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
 
     const zoomOutBound = calculateZoomBounds(
       maxLeftTranslateX,
-      maxRightTranslateX
+      maxRightTranslateX,
     );
 
     const zoom = d3
@@ -147,7 +128,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   useEffect(() => {
     const { interval, format } = getOptimalTicksForZoom(
       boundedWidth,
-      visibleData
+      visibleData,
     );
 
     const xAxisGenerator = d3
@@ -187,8 +168,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         .remove();
     }
   }, [yScale]);
-
-  console.log("Visible data:", visibleData);
 
   return (
     <div
