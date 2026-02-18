@@ -4,7 +4,7 @@ import { ChartData } from "../type";
 
 const mockData: ChartData[] = [
   {
-    date: "2023-01-01T10:00:00Z",
+    timestamp: "2023-01-01T10:00:00Z",
     open: 100,
     high: 110,
     low: 95,
@@ -13,7 +13,7 @@ const mockData: ChartData[] = [
     volume: 1000,
   },
   {
-    date: "2023-01-01T10:01:00Z",
+    timestamp: "2023-01-01T10:01:00Z",
     open: 105,
     high: 115,
     low: 100,
@@ -22,7 +22,7 @@ const mockData: ChartData[] = [
     volume: 1200,
   },
   {
-    date: "2023-01-01T10:02:00Z",
+    timestamp: "2023-01-01T10:02:00Z",
     open: 110,
     high: 120,
     low: 105,

@@ -122,7 +122,7 @@ export const computeYAxisTicks = (
 
 export const getOptimalTicksForZoom = (
   boundedWidth: number,
-  visibleData: any[],
+  visibleData: ChartData[],
 ) => {
   const availableWidth = boundedWidth;
   const minTickSpacing = 60;

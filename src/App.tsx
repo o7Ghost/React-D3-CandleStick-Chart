@@ -62,9 +62,8 @@ function App() {
                 .slice(0, 1000)
                 .filter((line) => line.trim());
 
-              const parsedData: ChartData[] = dataLines.reduce(
-                (acc: any[], line: string) => {
-                  // Trim whitespace from line and skip empty lines
+              const parsedData: ChartData[] = dataLines.reduce<ChartData[]>(
+                (acc, line) => {
                   const trimmedLine = line.trim();
                   if (!trimmedLine) {
                     return acc;
@@ -73,11 +72,11 @@ function App() {
                     .split(",")
                     .map((value) => value.trim());
                   if (values.length === headers.length) {
-                    const obj: { [key: string]: string } = {};
+                    const obj: Record<string, string> = {};
                     headers.forEach((header, index) => {
                       obj[header] = values[index];
                     });
-                    acc.unshift(obj);
+                    acc.unshift(obj as unknown as ChartData);
                   } else {
                     console.warn(
                       "Skipping line due to mismatched columns:",

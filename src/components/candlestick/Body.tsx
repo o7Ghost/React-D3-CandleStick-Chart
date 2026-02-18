@@ -12,7 +12,7 @@ export const Body = ({
   xScale,
   chartData,
 }: {
-  yScale: any;
+  yScale: d3.ScaleLinear<number, number>;
   xScale: d3.ScaleTime<number, number, never>;
   chartData: ChartData[];
 }) => {
@@ -48,7 +48,7 @@ export const Body = ({
         return d.open > d.close ? "#e13443" : "#089981";
       })
       .attr("fill", (d) => (d.open < d.close ? "#089981" : "#e13443"));
-  }, [xScale, yScale]);
+  }, [xScale, yScale, chartData]);
 
   return <g ref={candleStickBodyContainerRef} />;
 };

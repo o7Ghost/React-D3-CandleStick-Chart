@@ -8,7 +8,7 @@ export const Upperwick = ({
   xScale,
   chartData,
 }: {
-  yScale: any;
+  yScale: d3.ScaleLinear<number, number>;
   xScale: d3.ScaleTime<number, number, never>;
   chartData: ChartData[];
 }) => {
@@ -37,7 +37,7 @@ export const Upperwick = ({
         return yScale(d.high);
       })
       .attr("fill", (d) => (d.open < d.close ? "#089981" : "#e13443"));
-  }, [yScale, xScale]);
+  }, [yScale, xScale, chartData]);
 
   return <g ref={candleUpperWickContainerRef} />;
 };

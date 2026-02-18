@@ -107,7 +107,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     return () => {
       d3.select(svgRef.current).on(".drag", null);
     };
-  }, [data.length, spacing]);
+  }, [data.length, spacing, candlesInView]);
 
   useEffect(() => {
     const { interval, format } = getOptimalTicksForZoom(
@@ -131,7 +131,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         .select(SVG_DOMAIN_CLASS)
         .remove();
     }
-  }, [xScale]);
+  }, [xScale, boundedWidth, dimensions.chartHeight, visibleData]);
 
   useEffect(() => {
     const { tickCount } = computeYAxisTicks(bounds, boundedHeight);
@@ -151,7 +151,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         .select(SVG_DOMAIN_CLASS)
         .remove();
     }
-  }, [yScale]);
+  }, [yScale, bounds, boundedHeight, dimensions.chartWidth]);
 
   return (
     <div
