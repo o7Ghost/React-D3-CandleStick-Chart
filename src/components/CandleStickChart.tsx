@@ -7,7 +7,7 @@ import {
   CHART_WIDTH_DEFAULT_PADDING,
   SVG_DOMAIN_CLASS,
 } from "../constant";
-import { useChartDimensions } from "../hooks";
+import { useChartDimensions, usePanDrag } from "../hooks";
 import {
   computeYAxisTicks,
   findLocalMinAndMax,
@@ -29,9 +29,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const yAxis = useRef<SVGGElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
 
-  // used for panning and zooming
-  const [endIndex, setEndIndex] = useState<number | null>(null);
-
   const boundedWidth = dimensions.chartWidth - CHART_WIDTH_DEFAULT_PADDING;
   const boundedHeight = dimensions.chartHeight - CHART_HEIGHT_DEFAULT_PADDING;
 
@@ -44,6 +41,8 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   const [candlesInView, setCandlesInView] = useState(visibleCandleCount);
 
   const spacing = boundedWidth / candlesInView;
+
+  const { endIndex } = usePanDrag(svgRef, data.length, spacing, candlesInView);
 
   const effectiveEndIndex = endIndex ?? data.length;
 
@@ -79,35 +78,6 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
   ]);
 
   const yScale = d3.scaleLinear(bounds, [0, boundedHeight]);
-
-  useEffect(() => {
-    if (!svgRef.current) {
-      return;
-    }
-
-    const drag = d3.drag<SVGSVGElement, unknown>().on("drag", (event) => {
-      // spacing with candle width and spacing in between included
-      const candleWidthPx = spacing;
-      const idxDelta = -event.dx / candleWidthPx;
-
-      setEndIndex((prev) => {
-        const current = prev ?? data.length;
-        // minEnd is the smallest end index we can have.
-        // in case that data.length is smaller than inital candle view
-        // we take the min
-        const minEnd = Math.min(candlesInView, data.length);
-
-        // minEnd here insures that we don't pan beyond what we have
-        return Math.max(minEnd, Math.min(data.length, current + idxDelta));
-      });
-    });
-
-    d3.select(svgRef.current).call(drag);
-
-    return () => {
-      d3.select(svgRef.current).on(".drag", null);
-    };
-  }, [data.length, spacing, candlesInView]);
 
   useEffect(() => {
     const { interval, format } = getOptimalTicksForZoom(
