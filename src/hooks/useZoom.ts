@@ -39,6 +39,9 @@ export const useZoom = (
     };
 
     // use passive false to allow zooming event to call preventDefault
+    // HACKME: reminder to myself that don't use svgRef.current directly in event listener,
+    // otherwise it might cause some timming issue and not remove the event listener properly
+    // and cause stale data.
     svg.addEventListener("wheel", handleZoom, { passive: false });
 
     return () => svg.removeEventListener("wheel", handleZoom);
