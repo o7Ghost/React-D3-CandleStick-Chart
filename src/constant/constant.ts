@@ -10,3 +10,7 @@ export const MIN_PRICE_TICK_COUNT = 3;
 export const MINUTE_INTERVAL = 15;
 export const CHART_WIDTH_DEFAULT_PADDING = 40;
 export const CHART_HEIGHT_DEFAULT_PADDING = 10;
+export const ZOOM_INTENSITY = 0.02;
+
+export const MAX_CANDLES_IN_VIEW_FACTOR = 5;
+export const MIN_CANDLES_IN_VIEW = 2;

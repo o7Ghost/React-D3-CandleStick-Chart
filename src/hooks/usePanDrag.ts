@@ -31,10 +31,11 @@ export const usePanDrag = (
       });
     });
 
-    d3.select(svgRef.current).call(drag);
+    const svg = svgRef.current;
+    d3.select(svg).call(drag);
 
     return () => {
-      d3.select(svgRef.current).on(".drag", null);
+      d3.select(svg).on(".drag", null);
     };
   }, [dataLength, spacing, candlesInView]);
 

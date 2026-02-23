@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { ChartData } from "../type";
 import {
   CANDLE_UNIT_WIDTH,
@@ -7,7 +7,7 @@ import {
   CHART_WIDTH_DEFAULT_PADDING,
   SVG_DOMAIN_CLASS,
 } from "../constant";
-import { useChartDimensions, usePanDrag } from "../hooks";
+import { useChartDimensions, usePanDrag, useZoom } from "../hooks";
 import {
   computeYAxisTicks,
   findLocalMinAndMax,
@@ -37,8 +37,7 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
     dimensions.chartWidth / CANDLE_UNIT_WIDTH,
   );
 
-  // used for zooming
-  const [candlesInView, setCandlesInView] = useState(visibleCandleCount);
+  const candlesInView = useZoom(svgRef, data.length, visibleCandleCount);
 
   const spacing = boundedWidth / candlesInView;
 
