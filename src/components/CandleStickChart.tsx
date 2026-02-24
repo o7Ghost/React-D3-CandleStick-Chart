@@ -138,19 +138,42 @@ const CandleStickChart = ({ data }: { data: ChartData[] }) => {
         width={dimensions.chartWidth}
         height={dimensions.chartHeight}
       >
-        <g
-          ref={xAxis}
-          transform={`translate(${-partialTransform}, -${CHART_HEIGHT_DEFAULT_PADDING})`}
-        />
+        <defs>
+          <clipPath id="chart-clip">
+            <rect
+              x={0}
+              y={0}
+              width={boundedWidth}
+              height={dimensions.chartHeight}
+            />
+          </clipPath>
+        </defs>
+
+        <g clipPath="url(#chart-clip)">
+          <g
+            ref={xAxis}
+            transform={`translate(${-partialTransform}, -${CHART_HEIGHT_DEFAULT_PADDING})`}
+          />
+        </g>
         <g
           ref={yAxis}
           transform={`translate(-${CHART_WIDTH_DEFAULT_PADDING}, 0)`}
         />
 
-        <g transform={`translate(${-partialTransform}, 0)`}>
-          <Upperwick xScale={xScale} yScale={yScale} chartData={visibleData} />
-          <Body xScale={xScale} yScale={yScale} chartData={visibleData} />
-          <Lowerwick xScale={xScale} yScale={yScale} chartData={visibleData} />
+        <g clipPath="url(#chart-clip)">
+          <g transform={`translate(${-partialTransform}, 0)`}>
+            <Upperwick
+              xScale={xScale}
+              yScale={yScale}
+              chartData={visibleData}
+            />
+            <Body xScale={xScale} yScale={yScale} chartData={visibleData} />
+            <Lowerwick
+              xScale={xScale}
+              yScale={yScale}
+              chartData={visibleData}
+            />
+          </g>
         </g>
       </svg>
     </div>
